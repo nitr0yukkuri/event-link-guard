@@ -1,7 +1,8 @@
-package guard
+package safebrowsing
 
 import (
 	"context"
+	"event-link-guard/internal/guard"
 	"crypto/sha256"
 	"encoding/json"
 	"io"
@@ -14,7 +15,7 @@ import (
 const endpoint = "https://safebrowsing.googleapis.com/v5/urls:search"
 
 type entry struct {
-	verdict          Verdict
+	verdict          guard.Verdict
 	expires, checked time.Time
 }
 type Google struct {
@@ -27,9 +28,9 @@ type Google struct {
 func NewGoogle(key string) *Google {
 	return &Google{key: key, endpoint: endpoint, client: &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, cache: make(map[[32]byte]entry)}
 }
-func (g *Google) Check(ctx context.Context, raw string) Verdict {
+func (g *Google) Check(ctx context.Context, raw string) guard.Verdict {
 	if g.key == "" {
-		return Unknown
+		return guard.Unknown
 	}
 	key := sha256.Sum256([]byte(raw))
 	now := time.Now()
@@ -37,14 +38,14 @@ func (g *Google) Check(ctx context.Context, raw string) Verdict {
 	e, ok := g.cache[key]
 	g.mu.Unlock()
 	if ok && now.Before(e.expires) {
-		if e.verdict == Threat && now.Sub(e.checked) >= 30*time.Minute {
-			return Unknown
+		if e.verdict == guard.Threat && now.Sub(e.checked) >= 30*time.Minute {
+			return guard.Unknown
 		}
 		return e.verdict
 	}
 	dest, err := url.Parse(g.endpoint)
 	if err != nil {
-		return Unknown
+		return guard.Unknown
 	}
 	q := dest.Query()
 	q.Set("key", g.key)
@@ -52,15 +53,15 @@ func (g *Google) Check(ctx context.Context, raw string) Verdict {
 	dest.RawQuery = q.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, dest.String(), nil)
 	if err != nil {
-		return Unknown
+		return guard.Unknown
 	}
 	resp, err := g.client.Do(req)
 	if err != nil {
-		return Unknown
+		return guard.Unknown
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return Unknown
+		return guard.Unknown
 	}
 	var data struct {
 		Threats []struct {
@@ -71,22 +72,22 @@ func (g *Google) Check(ctx context.Context, raw string) Verdict {
 	}
 	dec := json.NewDecoder(io.LimitReader(resp.Body, 1<<20))
 	if dec.Decode(&data) != nil {
-		return Unknown
+		return guard.Unknown
 	}
 	var extra any
 	if dec.Decode(&extra) != io.EOF {
-		return Unknown
+		return guard.Unknown
 	}
 	ttl, err := time.ParseDuration(data.CacheDuration)
 	if err != nil || ttl < 0 {
-		return Unknown
+		return guard.Unknown
 	}
-	v := NoMatch
+	v := guard.NoMatch
 	for _, t := range data.Threats {
 		if t.URL == "" || len(t.Types) == 0 {
-			return Unknown
+			return guard.Unknown
 		}
-		v = Threat
+		v = guard.Threat
 	}
 	now = time.Now()
 	g.mu.Lock()
@@ -97,7 +98,7 @@ func (g *Google) Check(ctx context.Context, raw string) Verdict {
 	}
 	if len(g.cache) >= 4096 {
 		g.mu.Unlock()
-		return Unknown
+		return guard.Unknown
 	}
 	g.cache[key] = entry{v, now.Add(ttl), now}
 	g.mu.Unlock()

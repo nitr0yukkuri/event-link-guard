@@ -58,9 +58,22 @@ Example member notice (Japanese):
 
 > 公開イベント共有チャンネルでは、フィッシング等の対策として投稿された公開URLをGoogle Safe Browsingに照会する場合があります。Googleは送信情報を利用し、第三者と共有する場合があります。個人情報・限定公開リンク・認証トークンを含むURLは投稿しないでください。検知の正確性・網羅性は保証されません。危険な可能性のあるリンクは管理者確認や削除の対象になる場合があります。Advisory provided by Google: https://developers.google.com/safe-browsing/v4/advisory
 
+## Architecture
+
+Lightweight hexagonal architecture (Ports and Adapters), event-driven modular monolith.
+
+- `internal/moderation`: use cases, policy, ports, bounded workers.
+- `internal/guard`, `internal/spam`: detection logic, independent of Discord.
+- `internal/adapter/discord`: inbound Gateway and outbound REST adapter.
+- `internal/adapter/safebrowsing`: threat checker implementation.
+- `internal/config`: environment configuration; invalid boolean values are rejected.
+- `cmd/linkguard`: composition root.
+
+See [ADR 0001](docs/adr/0001-hexagonal-architecture.md). Normal message creates without URLs avoid REST lookup. Edit events are refreshed. REST requests use timeouts and do not retry rate limits automatically; failures are logged. Queues are best effort.
+
 ## Verification
 
-- Local URL inspection and spam detector unit tests, race detector and go vet passed for internal packages.
+- Detection and moderation policy tests are included. Refactor CI results must be checked before deployment.
 - Full application build, live Gateway integration and live Google API requests remain unverified. go.sum has not yet been generated in the restricted development environment.
 - Before production: integration tests, URL fuzz tests, dependency security review, load tests, privacy-preserving threat lookup and alert aggregation.
 

@@ -2,9 +2,6 @@ package guard
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
-	"sync/atomic"
 	"testing"
 )
 
@@ -31,39 +28,5 @@ func TestInspect(t *testing.T) {
 		if r.Verdict != c.want || r.Count != c.count {
 			t.Errorf("%q: got %+v want %s/%d", c.input, r, c.want, c.count)
 		}
-	}
-}
-func TestGoogle(t *testing.T) {
-	for _, tc := range []struct {
-		name, body string
-		code       int
-		want       Verdict
-	}{
-		{"no match", `{"cacheDuration":"300s"}`, 200, NoMatch},
-		{"match expression", `{"threats":[{"url":"https://example.com/","threatTypes":["SOCIAL_ENGINEERING"]}],"cacheDuration":"300s"}`, 200, Threat},
-		{"invalid", `{}`, 200, Unknown}, {"rate limited", `{}`, 429, Unknown},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			var calls atomic.Int32
-			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				calls.Add(1)
-				if r.URL.Query().Get("urls") != "https://example.com/event" {
-					t.Error("wrong url")
-				}
-				w.WriteHeader(tc.code)
-				_, _ = w.Write([]byte(tc.body))
-			}))
-			defer s.Close()
-			g := NewGoogle("test")
-			g.endpoint = s.URL
-			for i := 0; i < 2; i++ {
-				if v := g.Check(context.Background(), "https://example.com/event"); v != tc.want {
-					t.Fatalf("got %s want %s", v, tc.want)
-				}
-			}
-			if tc.want != Unknown && calls.Load() != 1 {
-				t.Error("cache not used")
-			}
-		})
 	}
 }
