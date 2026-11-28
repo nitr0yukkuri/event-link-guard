@@ -84,9 +84,9 @@ Example member notice (Japanese):
 
 ## Verification
 
-- Existing URL inspection and spam detector unit tests, race detector and go vet passed for internal packages.
-- The new role picker has not been compiled or connected to a live Discord server in this editing session. Full application build, live Gateway integration and live Google API requests remain unverified. go.sum has not yet been generated in the restricted development environment.
-- Before production: integration tests, URL fuzz tests, dependency security review, load tests, privacy-preserving threat lookup and alert aggregation.
+- `go vet ./...` and `go build ./cmd/linkguard ./cmd/rolepicker` pass locally.
+- `go test ./...` cannot complete the existing `internal/guard` HTTP tests in this Windows sandbox: `httptest` loopback connections are denied by the environment. The spam detector tests pass. Run the suite in CI or an environment that permits local TCP connections.
+- The role picker has not yet connected to a live Discord server. Before production: live Gateway integration, role permission review, URL fuzz tests, dependency security review, load tests, privacy-preserving threat lookup and alert aggregation.
 
 ## References
 
@@ -98,3 +98,4 @@ Example member notice (Japanese):
 ## License
 
 MIT
+
