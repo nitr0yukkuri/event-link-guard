@@ -1,6 +1,6 @@
 # Event Link Guard
 
-A lightweight Discord security bot written in Go for event-sharing communities. Focused on malicious URLs and message spam.
+A small Discord toolkit written in Go for event-sharing communities, with a URL and spam guard plus a separate ordered role picker.
 
 **v0.2 — experimental MVP. Monitor-only by default. Not yet validated against a live Discord server or Google API.**
 
@@ -11,12 +11,36 @@ A lightweight Discord security bot written in Go for event-sharing communities. 
 - Per-user sliding-window spam detection across configured channels.
 - Independent bounded queues for URL inspection and spam actions.
 - Optional message deletion, private moderation logs, no automatic bans, timeouts or reaction monitoring.
+- Standalone ordered multi-select role panel that changes only configured, permissionless roles.
 
 | Spam rule | Initial threshold |
 | --- | --- |
 | Message burst | 6 messages within 5 seconds |
 | Repeated text | 4 normalized identical messages within 20 seconds |
 | Repeated URL | 4 distinct messages containing the same URL within 30 seconds |
+
+## Ordered role picker
+
+The standalone \`cmd/rolepicker\` process adds an ordered, multi-select role panel for event communities. Members open a private selection menu from one public button. Option order follows the JSON file, and existing selections appear preselected when the menu opens.
+
+It only adds or removes the roles listed in \`ROLE_PICKER_ROLES_JSON\`. Other member roles, Carl-bot messages, and existing reaction roles are not modified. To keep self-service safe, startup refuses configured roles that have permissions, are integration-managed, are missing or duplicated by name, or sit at or above the bot's highest role. The bot also needs Manage Roles. It does not create server roles.
+
+1. Create a separate Discord application/bot for this process. Invite it with the \`bot\` and \`applications.commands\` scopes. Grant only View Channel, Send Messages, Read Message History, and Manage Roles for the role channel; do not grant Administrator. Enable no privileged gateway intents.
+2. Create the server roles first. Configure their exact names in \`rolepicker.roles.example.json\`, then copy that file and set \`ROLE_PICKER_ROLES_JSON\` to its contents. The JSON order controls the panel and menu order. Change the sample list to match the roles that actually exist in the server.
+3. Move the bot's highest role above every configured self-selectable role. Keep those roles permissionless. Set \`ROLE_PICKER_TOKEN\`, \`ROLE_PICKER_GUILD_ID\`, and \`ROLE_PICKER_CHANNEL_ID\` in the process environment. Optionally set \`ROLE_PICKER_PANEL_MESSAGE_ID\` to pin updates to a specific panel message.
+4. Start the bot with \`go run ./cmd/rolepicker\`. A server administrator can then run \`/role-panel\`; it creates the panel or updates this bot's existing panel in the configured channel. Without a message ID, it searches the latest 100 messages in that channel for its own panel.
+
+PowerShell example:
+
+\`\`\`powershell
+$env:ROLE_PICKER_TOKEN = 'YOUR_BOT_TOKEN'
+$env:ROLE_PICKER_GUILD_ID = 'YOUR_SERVER_ID'
+$env:ROLE_PICKER_CHANNEL_ID = 'ROLE_CHANNEL_ID'
+$env:ROLE_PICKER_ROLES_JSON = Get-Content .\\rolepicker.roles.example.json -Raw
+go run ./cmd/rolepicker
+\`\`\`
+
+This process is separate from \`cmd/linkguard\`: it does not need the Google API key, Message Content intent, or URL-inspection consent setting. The role picker stores no member data; Discord remains the source of each member's role state. Run it continuously for the interaction buttons to remain available.
 
 ## Setup
 
@@ -60,8 +84,8 @@ Example member notice (Japanese):
 
 ## Verification
 
-- Local URL inspection and spam detector unit tests, race detector and go vet passed for internal packages.
-- Full application build, live Gateway integration and live Google API requests remain unverified. go.sum has not yet been generated in the restricted development environment.
+- Existing URL inspection and spam detector unit tests, race detector and go vet passed for internal packages.
+- The new role picker has not been compiled or connected to a live Discord server in this editing session. Full application build, live Gateway integration and live Google API requests remain unverified. go.sum has not yet been generated in the restricted development environment.
 - Before production: integration tests, URL fuzz tests, dependency security review, load tests, privacy-preserving threat lookup and alert aggregation.
 
 ## References

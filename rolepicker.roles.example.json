@@ -1,0 +1,18 @@
+[
+  {"category":"地域","name":"地域｜関東","label":"関東","emoji":"🗼"},
+  {"category":"地域","name":"地域｜東海・名古屋","label":"東海・名古屋","emoji":"🐬"},
+  {"category":"地域","name":"地域｜関西","label":"関西","emoji":"🐙"},
+  {"category":"地域","name":"地域｜九州","label":"九州（沖縄含む）","emoji":"🌋"},
+  {"category":"地域","name":"地域｜海外","label":"海外","emoji":"🌏"},
+  {"category":"地域","name":"地域｜その他","label":"その他（北海道・東北・北陸・甲信越・中国・四国）","emoji":"🧭"},
+  {"category":"参加形式","name":"形式｜オンライン","label":"オンライン","emoji":"🌐"},
+  {"category":"技術テーマ","name":"興味｜フロントエンド","label":"フロントエンド","emoji":"🖥️"},
+  {"category":"技術テーマ","name":"興味｜バックエンド","label":"バックエンド","emoji":"⚙️"},
+  {"category":"技術テーマ","name":"興味｜インフラ・クラウド","label":"インフラ・クラウド","emoji":"☁️"},
+  {"category":"技術テーマ","name":"興味｜モバイル","label":"モバイル","emoji":"📱"},
+  {"category":"技術テーマ","name":"興味｜セキュリティ","label":"セキュリティ","emoji":"🔐"},
+  {"category":"イベント形式","name":"興味｜カンファレンス","label":"カンファレンス","emoji":"🎤"},
+  {"category":"イベント形式","name":"興味｜勉強会","label":"勉強会","emoji":"📚"},
+  {"category":"イベント形式","name":"興味｜ハッカソン","label":"ハッカソン","emoji":"🏆"},
+  {"category":"興味","name":"興味｜学生支援","label":"学生支援","emoji":"🎓"}
+]
